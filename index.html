@@ -1,66 +1,212 @@
-<!doctype html>
-<html lang="en" data-theme="dark">
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ReceiptSplit Lite</title>
-  <!-- Pico CSS CDN (modern, mobile-first, dark-mode) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" />
-  <!-- Tesseract.js via CDN (client-side OCR) -->
-  <script src="https://unpkg.com/tesseract.js@v6.0.0/dist/tesseract.min.js"></script>
-  <style>
-    /* Tiny custom overrides for glassmorphism + app-specific */
-    :root { --glass: rgba(255,255,255,0.05); --glass-border: rgba(255,255,255,0.1); }
-    body { background: linear-gradient(135deg, #0b0c10 0%, #1a1b2e 50%, #16213e 100%); }
-    article { backdrop-filter: blur(20px); background: var(--glass); border: 1px solid var(--glass-border); }
-    input, select, button { border-radius: 12px; }
-    table { font-size: .875em; }
-    .raw { background: var(--glass); border: 1px solid var(--glass-border); }
-    .totals .grid { gap: .5em; }
-    .chips { display: flex; flex-wrap: wrap; gap: .5em; }
-    .chip { background: var(--glass); padding: .5em 1em; border-radius: 999px; font-size: .875em; }
-    .muted { opacity: .7; }
-    .small { font-size: .875em; }
-    .icon-btn { padding: .5em .75em; font-size: 1.1em; }
-    .progress { background: var(--glass); padding: .75em; border-radius: 12px; margin: .5em 0; }
-    header { text-align: center; padding: 2em 0 1em; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lumina • Your Daily Rhythm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Lumina%22,%22short_name%22:%22Lumina%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23111111%22,%22theme_color%22:%22%236b21a8%22,%22icons%22:[{%22src%22:%22https://picsum.photos/id/1015/192/192%22,%22sizes%22:%22192x192%22,%22type%22:%22image/png%22}]}">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+    </style>
 </head>
-<body>
-  <header>
-    <hgroup>
-      <h1>📱 ReceiptSplit Lite</h1>
-      <p>Scan receipt, assign items, share link. No account needed.</p>
-    </hgroup>
-  </header>
+<body class="bg-neutral-950 text-white font-sans overflow-x-hidden">
+    <div class="max-w-[420px] mx-auto min-h-screen bg-neutral-950 flex flex-col shadow-2xl relative">
+        
+        <!-- HEADER -->
+        <div class="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 px-6 py-8 flex items-center justify-between">
+            <div>
+                <h1 class="text-4xl font-bold tracking-tighter text-white" style="font-family: 'Space Grotesk', sans-serif;">lumina</h1>
+                <p class="text-violet-200 text-sm tracking-widest -mt-1">your rhythm</p>
+            </div>
+            <div onclick="showAddModal()" 
+                 class="w-11 h-11 bg-white/20 hover:bg-white/30 backdrop-blur-xl rounded-2xl flex items-center justify-center text-3xl transition-all active:scale-95 cursor-pointer shadow-inner">
+                +
+            </div>
+        </div>
 
-  <main>
-    <!-- People -->
-    <article>
-      <header>
-        <h3>👥 Add friends</h3>
-      </header>
-      <label for="peopleInput">Names (comma-separated)</label>
-      <input id="peopleInput" type="text" placeholder="Alex, Sam, Jamie" />
-      <div class="grid">
-        <button id="applyPeopleBtn">Apply people</button>
-        <button id="addItemBtn">+ Add item</button>
-      </div>
-      <div id="peopleChips" class="chips"></div>
-    </article>
+        <!-- MAIN CONTENT -->
+        <div id="main-content" class="flex-1 overflow-y-auto pb-24 px-5 pt-2">
+            
+            <!-- TODAY TAB -->
+            <div id="tab-today" class="tab-content">
+                <div class="mb-8">
+                    <div class="flex justify-between items-end mb-4">
+                        <div>
+                            <p class="text-neutral-400 text-sm">Today • <span id="current-date" class="font-medium text-white"></span></p>
+                            <p id="greeting" class="text-3xl font-semibold tracking-tight"></p>
+                        </div>
+                        <div onclick="logMood()" 
+                             class="px-5 py-2 bg-neutral-900 rounded-3xl flex items-center gap-2 text-sm font-medium cursor-pointer hover:bg-neutral-800 transition-colors">
+                            <span id="today-mood" class="text-3xl"></span>
+                        </div>
+                    </div>
 
-    <!-- Scan -->
-    <article>
-      <header>
-        <h3>📷 Scan receipt (optional)</h3>
-      </header>
-      <input id="photoInput" type="file" accept="image/*" capture="environment" />
-      <div class="grid">
-        <button id="scanBtn">🔍 Scan</button>
-        <button id="toggleRawBtn">Raw OCR</button>
-      </div>
-      <div id="progress" class="progress muted"></div>
-      <pre id="rawOcr" class="raw hidden"></pre>
-    </article>
+                    <!-- Habits Today -->
+                    <div class="space-y-3" id="today-habits">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
 
-    <!-- Items -->
+                <!-- Quick Pomodoro Card -->
+                <div onclick="switchTab(1)" 
+                     class="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-white/10 rounded-3xl p-6 cursor-pointer hover:border-violet-500/30 transition-all">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="uppercase text-xs tracking-widest text-violet-400 font-medium">Focus Mode</p>
+                            <p class="text-2xl font-semibold">Pomodoro</p>
+                        </div>
+                        <div class="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-4xl">⏳</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOCUS TAB -->
+            <div id="tab-focus" class="tab-content hidden">
+                <div class="flex flex-col items-center justify-center min-h-[380px]">
+                    <div class="relative w-64 h-64">
+                        <!-- Timer Ring -->
+                        <svg id="timer-svg" class="w-full h-full -rotate-90" viewBox="0 0 200 200">
+                            <circle class="text-neutral-800" stroke-width="12" fill="transparent" r="88" cx="100" cy="100"/>
+                            <circle id="timer-progress" class="text-violet-500 transition-all duration-300" 
+                                    stroke-width="12" stroke-linecap="round" fill="transparent" 
+                                    r="88" cx="100" cy="100" stroke-dasharray="552" stroke-dashoffset="552"/>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <div id="timer-display" class="text-7xl font-mono font-semibold tabular-nums">25:00</div>
+                            <div id="timer-status" class="text-sm uppercase tracking-widest text-violet-400 mt-2">Work Session</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4 mt-10">
+                        <button onclick="toggleTimer()" 
+                                id="timer-btn"
+                                class="px-10 py-4 bg-violet-600 hover:bg-violet-500 active:scale-95 transition-all rounded-3xl font-semibold text-lg shadow-xl shadow-violet-500/30">
+                            START
+                        </button>
+                        <button onclick="resetTimer()" 
+                                class="px-6 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-3xl text-sm font-medium">
+                            RESET
+                        </button>
+                    </div>
+                    
+                    <div class="flex gap-6 mt-12 text-xs uppercase tracking-widest">
+                        <div onclick="setMode(0)" id="mode-0" class="cursor-pointer text-violet-400">25 min</div>
+                        <div onclick="setMode(1)" id="mode-1" class="cursor-pointer text-neutral-400">5 min</div>
+                        <div onclick="setMode(2)" id="mode-2" class="cursor-pointer text-neutral-400">15 min</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CALENDAR TAB -->
+            <div id="tab-calendar" class="tab-content hidden">
+                <h2 class="text-xl font-semibold mb-4 px-1">Habit Heatmap</h2>
+                <div id="heatmap" class="grid grid-cols-7 gap-1 text-[10px] bg-neutral-900 p-4 rounded-3xl">
+                    <!-- JS populated -->
+                </div>
+                <p class="text-center text-neutral-500 text-xs mt-4">Last 91 days • darker = more habits completed</p>
+            </div>
+
+            <!-- STATS TAB -->
+            <div id="tab-stats" class="tab-content hidden">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-neutral-900 rounded-3xl p-6">
+                        <p class="text-xs text-neutral-400">LONGEST STREAK</p>
+                        <p id="longest-streak" class="text-6xl font-bold text-amber-400 mt-2">0</p>
+                        <p class="text-sm text-neutral-400">days 🔥</p>
+                    </div>
+                    <div class="bg-neutral-900 rounded-3xl p-6">
+                        <p class="text-xs text-neutral-400">COMPLETION RATE</p>
+                        <p id="completion-rate" class="text-6xl font-bold text-emerald-400 mt-2">0%</p>
+                    </div>
+                </div>
+                
+                <div class="mt-6 bg-neutral-900 rounded-3xl p-6">
+                    <p class="text-xs uppercase tracking-widest mb-3">Recent Mood</p>
+                    <div id="mood-history" class="flex gap-4 justify-center text-5xl">
+                        <!-- JS -->
+                    </div>
+                </div>
+                
+                <div onclick="clearAllData()" 
+                     class="mt-8 text-center text-xs text-red-400 hover:text-red-300 cursor-pointer">
+                    Reset all data
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAV -->
+        <div class="fixed bottom-0 left-1/2 -translate-x-1/2 max-w-[420px] w-full bg-neutral-950 border-t border-white/10 z-50">
+            <div class="flex justify-around items-center py-2 px-6 text-neutral-400">
+                <div onclick="switchTab(0)" id="nav-0" 
+                     class="nav-item flex flex-col items-center text-violet-400">
+                    <div class="text-2xl mb-1">🌅</div>
+                    <div class="text-[10px] font-medium">TODAY</div>
+                </div>
+                <div onclick="switchTab(1)" id="nav-1" 
+                     class="nav-item flex flex-col items-center">
+                    <div class="text-2xl mb-1">⏳</div>
+                    <div class="text-[10px] font-medium">FOCUS</div>
+                </div>
+                <div onclick="switchTab(2)" id="nav-2" 
+                     class="nav-item flex flex-col items-center">
+                    <div class="text-2xl mb-1">📅</div>
+                    <div class="text-[10px] font-medium">HISTORY</div>
+                </div>
+                <div onclick="switchTab(3)" id="nav-3" 
+                     class="nav-item flex flex-col items-center">
+                    <div class="text-2xl mb-1">📊</div>
+                    <div class="text-[10px] font-medium">STATS</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADD HABIT MODAL -->
+        <div id="add-modal" class="hidden fixed inset-0 bg-black/70 flex items-end justify-center z-[100]">
+            <div class="bg-neutral-900 w-full max-w-[420px] rounded-t-3xl p-6">
+                <h3 class="text-xl font-semibold mb-6">New Habit</h3>
+                
+                <div class="mb-6">
+                    <input id="habit-name" 
+                           class="w-full bg-neutral-800 border border-white/10 focus:border-violet-500 rounded-2xl px-5 py-4 text-lg placeholder:text-neutral-500 outline-none"
+                           placeholder="e.g. Drink water, Meditate...">
+                </div>
+                
+                <div class="mb-8">
+                    <p class="text-xs uppercase tracking-widest text-neutral-400 mb-3">Choose emoji</p>
+                    <div id="emoji-picker" class="grid grid-cols-6 gap-3 text-4xl">
+                        <!-- JS filled -->
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button onclick="hideAddModal()" 
+                            class="flex-1 py-4 rounded-3xl border border-white/10 text-sm font-medium">CANCEL</button>
+                    <button onclick="addHabit()" 
+                            class="flex-1 py-4 bg-white text-neutral-950 rounded-3xl text-sm font-semibold">CREATE HABIT</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MOOD MODAL -->
+        <div id="mood-modal" onclick="if(event.target.id==='mood-modal')hideMoodModal()" 
+             class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[110]">
+            <div onclick="event.stopImmediatePropagation()" 
+                 class="bg-neutral-900 rounded-3xl p-8 w-80">
+                <p class="text-center text-xl mb-6">How are you feeling today?</p>
+                <div class="grid grid-cols-5 gap-4 text-6xl" id="mood-options">
+                    <!-- JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TOAST -->
+        <div id="toast" class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 bg-neutral-800 text-white text-sm px-6 py-3 rounded-3xl shadow-2xl flex items-center gap-2">
+            <span id="toast-text"></span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
